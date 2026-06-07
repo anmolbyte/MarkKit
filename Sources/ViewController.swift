@@ -29,6 +29,8 @@ class ViewController: NSViewController {
         // Attach highlighter
         highlighter.textView = textView
         textView.delegate = highlighter
+        
+        highlighter.fontsDidChange()
     }
     
     override func viewDidAppear() {
