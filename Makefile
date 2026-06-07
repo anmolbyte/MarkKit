@@ -16,6 +16,7 @@ $(BUNDLE): $(SWIFT_FILES) Info.plist
 	@mkdir -p $(RESOURCES)
 	$(SWIFTC) $(SWIFT_FLAGS) $(SWIFT_FILES) -o $(MACOS)/$(APP_NAME)
 	@cp Info.plist $(CONTENTS)/Info.plist
+	@[ -f AppIcon.icns ] && cp AppIcon.icns $(RESOURCES)/AppIcon.icns || true
 	@echo "Build complete. Run 'open $(BUNDLE)' to launch."
 
 clean:
