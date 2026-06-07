@@ -29,6 +29,7 @@ class MarkdownTextView: NSTextView {
         self.insertionPointColor = NSColor.textColor
         self.backgroundColor = NSColor.textBackgroundColor
         self.textContainerInset = NSSize(width: 40, height: 40)
+        self.linkTextAttributes = [:]
     }
     
     required init?(coder: NSCoder) {

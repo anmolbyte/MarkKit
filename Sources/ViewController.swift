@@ -15,6 +15,7 @@ class ViewController: NSViewController {
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
+        scrollView.scrollerStyle = .overlay
         
         textView.autoresizingMask = [.width]
         scrollView.documentView = textView

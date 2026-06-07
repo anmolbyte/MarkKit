@@ -18,6 +18,8 @@ class MarkdownSyntaxHighlighter: NSObject, NSTextViewDelegate {
     var h6Font: NSFont!
     var codeFont: NSFont!
     
+    var imageViews: [NSImageView] = []
+    
     override init() {
         super.init()
         reloadFonts()
@@ -140,7 +142,7 @@ class MarkdownSyntaxHighlighter: NSObject, NSTextViewDelegate {
             // Strikethrough (~~text~~)
             (pattern: "~~[^~]+~~", attributes: [.strikethroughStyle: NSUnderlineStyle.single.rawValue]),
             // Inline Code (`code`)
-            (pattern: "`[^`]+`", attributes: [
+            (pattern: "`[^`\\n]+`", attributes: [
                 .font: codeFont!,
                 .foregroundColor: NSColor.systemPink,
                 .backgroundColor: NSColor.windowBackgroundColor
@@ -160,6 +162,25 @@ class MarkdownSyntaxHighlighter: NSObject, NSTextViewDelegate {
             (pattern: "(?m)^[-*_]{3,}[ \\t]*$", attributes: [
                 .foregroundColor: NSColor.tertiaryLabelColor
             ]),
+            // Task Lists (Unchecked)
+            (pattern: "(?m)^[ \\t]*[-*+] \\[[ \\]]", attributes: [
+                .foregroundColor: NSColor.tertiaryLabelColor
+            ]),
+            // Task Lists (Checked)
+            (pattern: "(?m)^[ \\t]*[-*+] \\[[xX]\\]", attributes: [
+                .foregroundColor: NSColor.systemGreen
+            ]),
+            // Footnotes
+            (pattern: "\\[\\^[^\\]]+\\]", attributes: [
+                .font: NSFont.systemFont(ofSize: baseFontSize * 0.7),
+                .baselineOffset: baseFontSize * 0.4,
+                .foregroundColor: NSColor.systemBlue
+            ]),
+            // Tables (basic pipe matching)
+            (pattern: "(?m)^\\|.*\\|$", attributes: [
+                .font: codeFont!,
+                .backgroundColor: NSColor.windowBackgroundColor.withAlphaComponent(0.5)
+            ]),
             // Headers
             (pattern: "(?m)^# [^\\n]+", attributes: [.font: h1Font!]),
             (pattern: "(?m)^## [^\\n]+", attributes: [.font: h2Font!]),
@@ -178,7 +199,23 @@ class MarkdownSyntaxHighlighter: NSObject, NSTextViewDelegate {
             }
         }
         
+        // Bare URLs
+        let bareRegex = try? NSRegularExpression(pattern: "https?://[^\\s()<>]+")
+        if let matches = bareRegex?.matches(in: string as String, options: [], range: range) {
+            for match in matches {
+                let urlString = string.substring(with: match.range)
+                if let url = URL(string: urlString) {
+                    if UserDefaults.standard.bool(forKey: "ClickableLinks") {
+                        textStorage.addAttribute(.link, value: url, range: match.range)
+                        textStorage.addAttribute(.cursor, value: NSCursor.pointingHand, range: match.range)
+                    }
+                    textStorage.addAttribute(.foregroundColor, value: NSColor.systemBlue, range: match.range)
+                }
+            }
+        }
+        
         let hideLinks = UserDefaults.standard.bool(forKey: "HideLinks")
+        let clickableLinks = UserDefaults.standard.bool(forKey: "ClickableLinks")
         let cursor = textView.selectedRange()
         
         let linkRegex = try? NSRegularExpression(pattern: "!?\\[([^\\]]+)\\]\\(([^)]+)\\)")
@@ -189,8 +226,17 @@ class MarkdownSyntaxHighlighter: NSObject, NSTextViewDelegate {
                 textStorage.addAttribute(.foregroundColor, value: NSColor.systemBlue, range: match.range)
                 
                 if match.numberOfRanges == 3 {
+                    let textRange = match.range(at: 1)
                     let urlRange = match.range(at: 2)
                     let parenRange = NSRange(location: urlRange.location - 1, length: urlRange.length + 2)
+                    
+                    let urlString = string.substring(with: urlRange)
+                    if let url = URL(string: urlString) {
+                        if clickableLinks {
+                            textStorage.addAttribute(.link, value: url, range: textRange)
+                            textStorage.addAttribute(.cursor, value: NSCursor.pointingHand, range: textRange)
+                        }
+                    }
                     
                     if hideLinks && !isIntersecting {
                         textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: 0.1), range: parenRange)
@@ -200,7 +246,53 @@ class MarkdownSyntaxHighlighter: NSObject, NSTextViewDelegate {
             }
         }
         
+        // Dynamic List Indent
+        if UserDefaults.standard.bool(forKey: "DynamicListIndent") {
+            let listRegex = try? NSRegularExpression(pattern: "(?m)^([ \\t]*[-*+]|\\d+\\.)[ \\t]+([^\\n]+)")
+            if let matches = listRegex?.matches(in: string as String, options: [], range: range) {
+                for match in matches {
+                    let style = NSMutableParagraphStyle()
+                    style.headIndent = 28.0
+                    style.firstLineHeadIndent = 0.0
+                    textStorage.addAttribute(.paragraphStyle, value: style, range: match.range)
+                }
+            }
+        }
+        
         textStorage.endEditing()
+        
+        // Inline Images (Asynchronous overlay)
+        if UserDefaults.standard.bool(forKey: "InlineImages") {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, let textView = self.textView, let layoutManager = textView.layoutManager, let textContainer = textView.textContainer else { return }
+                
+                for view in self.imageViews { view.removeFromSuperview() }
+                self.imageViews.removeAll()
+                
+                let fullRange = NSRange(location: 0, length: (textView.string as NSString).length)
+                let imgRegex = try? NSRegularExpression(pattern: "!\\[[^\\]]*\\]\\(([^)]+)\\)")
+                if let matches = imgRegex?.matches(in: textView.string, options: [], range: fullRange) {
+                    for match in matches {
+                        if match.numberOfRanges == 2 {
+                            let path = (textView.string as NSString).substring(with: match.range(at: 1))
+                            if let image = NSImage(contentsOfFile: path) {
+                                let glyphRange = layoutManager.glyphRange(forCharacterRange: match.range, actualCharacterRange: nil)
+                                let rect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+                                
+                                let imageView = NSImageView(frame: NSRect(x: rect.maxX + 10, y: rect.minY, width: 100, height: 100))
+                                imageView.image = image
+                                imageView.imageScaling = .scaleProportionallyUpOrDown
+                                textView.addSubview(imageView)
+                                self.imageViews.append(imageView)
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            for view in self.imageViews { view.removeFromSuperview() }
+            self.imageViews.removeAll()
+        }
         
         textView.selectedRanges = savedSelectedRanges
         isHighlighting = false

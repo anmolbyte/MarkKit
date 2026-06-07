@@ -8,7 +8,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             "FontSize": 16.0,
             "Theme": "System",
             "FrostedGlass": false,
-            "HideLinks": true
+            "HideLinks": true,
+            "DynamicListIndent": false,
+            "InlineImages": false,
+            "ClickableLinks": true
         ])
         
         applyTheme(UserDefaults.standard.string(forKey: "Theme") ?? "System")
@@ -109,6 +112,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hideLinksItem.target = self
         settingsMenu.addItem(hideLinksItem)
         
+        let clickableLinksItem = NSMenuItem(title: "Clickable Links", action: #selector(toggleClickableLinks(_:)), keyEquivalent: "")
+        clickableLinksItem.target = self
+        settingsMenu.addItem(clickableLinksItem)
+        
+        let dynamicIndentItem = NSMenuItem(title: "Dynamic List Indent", action: #selector(toggleDynamicIndent(_:)), keyEquivalent: "")
+        dynamicIndentItem.target = self
+        settingsMenu.addItem(dynamicIndentItem)
+        
+        let inlineImagesItem = NSMenuItem(title: "Inline Images", action: #selector(toggleInlineImages(_:)), keyEquivalent: "")
+        inlineImagesItem.target = self
+        settingsMenu.addItem(inlineImagesItem)
+        
         let frostedGlassItem = NSMenuItem(title: "Frosted Glass Titlebar", action: #selector(toggleFrostedGlass(_:)), keyEquivalent: "")
         frostedGlassItem.target = self
         settingsMenu.addItem(frostedGlassItem)
@@ -141,6 +156,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.post(name: NSNotification.Name("FontSettingsChanged"), object: nil)
     }
     
+    @objc func toggleClickableLinks(_ sender: NSMenuItem) {
+        let current = UserDefaults.standard.bool(forKey: "ClickableLinks")
+        UserDefaults.standard.set(!current, forKey: "ClickableLinks")
+        NotificationCenter.default.post(name: NSNotification.Name("FontSettingsChanged"), object: nil)
+    }
+    
+    @objc func toggleDynamicIndent(_ sender: NSMenuItem) {
+        let current = UserDefaults.standard.bool(forKey: "DynamicListIndent")
+        UserDefaults.standard.set(!current, forKey: "DynamicListIndent")
+        NotificationCenter.default.post(name: NSNotification.Name("FontSettingsChanged"), object: nil)
+    }
+    
+    @objc func toggleInlineImages(_ sender: NSMenuItem) {
+        let current = UserDefaults.standard.bool(forKey: "InlineImages")
+        UserDefaults.standard.set(!current, forKey: "InlineImages")
+        NotificationCenter.default.post(name: NSNotification.Name("FontSettingsChanged"), object: nil)
+    }
+    
     @objc func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(changeFontFamily(_:)) {
             let currentFont = UserDefaults.standard.string(forKey: "FontFamily") ?? "System"
@@ -163,6 +196,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if menuItem.action == #selector(toggleHideLinks(_:)) {
             menuItem.state = UserDefaults.standard.bool(forKey: "HideLinks") ? .on : .off
+            return true
+        }
+        if menuItem.action == #selector(toggleClickableLinks(_:)) {
+            menuItem.state = UserDefaults.standard.bool(forKey: "ClickableLinks") ? .on : .off
+            return true
+        }
+        if menuItem.action == #selector(toggleDynamicIndent(_:)) {
+            menuItem.state = UserDefaults.standard.bool(forKey: "DynamicListIndent") ? .on : .off
+            return true
+        }
+        if menuItem.action == #selector(toggleInlineImages(_:)) {
+            menuItem.state = UserDefaults.standard.bool(forKey: "InlineImages") ? .on : .off
             return true
         }
         return true
