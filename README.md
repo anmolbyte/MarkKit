@@ -13,8 +13,10 @@ MarkKit is an ultra-lightweight, standalone macOS text editor built in Swift usi
 isnt it lovely?
 
 `
+  
 
-  - **Blockquotes**: `> This is a quote`
+
+- **Blockquotes**: `> This is a quote`
   - **Lists & Tables**: `- item`, `- [x] checked`, and `| Column 1 | Column 2 |`
   - **Footnotes**: `[^1]`
   - **Dividers**: `---` or `***`
@@ -26,6 +28,11 @@ isnt it lovely?
 - **Cursor Safeguard:** Text updates are managed precisely to prevent the insertion point (cursor) from jumping to the end of the line during real-time formatting.
 - **Standalone Document App:** Built as an `NSDocument`-based application, it opens, edits, and saves `.md` and `.txt` files directly to/from the macOS Finder natively.
 - **No Xcode Project Required:** The project is compiled simply via a `Makefile` that constructs the `.app` bundle, avoiding bloated configurations and keeping the source code perfectly transparent.
+
+
+
+#### This is an example list:
+
 
 ## Building and Running
 

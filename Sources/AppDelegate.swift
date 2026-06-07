@@ -9,7 +9,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             "Theme": "System",
             "FrostedGlass": false,
             "HideLinks": true,
-            "DynamicListIndent": false,
+            "DynamicListIndentBullets": false,
+            "DynamicListIndentNumbers": false,
             "InlineImages": false,
             "ClickableLinks": true
         ])
@@ -116,8 +117,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         clickableLinksItem.target = self
         settingsMenu.addItem(clickableLinksItem)
         
-        let dynamicIndentItem = NSMenuItem(title: "Dynamic List Indent", action: #selector(toggleDynamicIndent(_:)), keyEquivalent: "")
-        dynamicIndentItem.target = self
+        let dynamicIndentItem = NSMenuItem(title: "Dynamic List Indent", action: nil, keyEquivalent: "")
+        let dynamicIndentMenu = NSMenu()
+        
+        let indentBulletsItem = NSMenuItem(title: "Bullets", action: #selector(toggleIndentBullets(_:)), keyEquivalent: "")
+        indentBulletsItem.target = self
+        dynamicIndentMenu.addItem(indentBulletsItem)
+        
+        let indentNumbersItem = NSMenuItem(title: "Numbers", action: #selector(toggleIndentNumbers(_:)), keyEquivalent: "")
+        indentNumbersItem.target = self
+        dynamicIndentMenu.addItem(indentNumbersItem)
+        
+        dynamicIndentItem.submenu = dynamicIndentMenu
         settingsMenu.addItem(dynamicIndentItem)
         
         let inlineImagesItem = NSMenuItem(title: "Inline Images", action: #selector(toggleInlineImages(_:)), keyEquivalent: "")
@@ -162,9 +173,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.post(name: NSNotification.Name("FontSettingsChanged"), object: nil)
     }
     
-    @objc func toggleDynamicIndent(_ sender: NSMenuItem) {
-        let current = UserDefaults.standard.bool(forKey: "DynamicListIndent")
-        UserDefaults.standard.set(!current, forKey: "DynamicListIndent")
+    @objc func toggleIndentBullets(_ sender: NSMenuItem) {
+        let current = UserDefaults.standard.bool(forKey: "DynamicListIndentBullets")
+        UserDefaults.standard.set(!current, forKey: "DynamicListIndentBullets")
+        NotificationCenter.default.post(name: NSNotification.Name("FontSettingsChanged"), object: nil)
+    }
+    
+    @objc func toggleIndentNumbers(_ sender: NSMenuItem) {
+        let current = UserDefaults.standard.bool(forKey: "DynamicListIndentNumbers")
+        UserDefaults.standard.set(!current, forKey: "DynamicListIndentNumbers")
         NotificationCenter.default.post(name: NSNotification.Name("FontSettingsChanged"), object: nil)
     }
     
@@ -202,8 +219,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menuItem.state = UserDefaults.standard.bool(forKey: "ClickableLinks") ? .on : .off
             return true
         }
-        if menuItem.action == #selector(toggleDynamicIndent(_:)) {
-            menuItem.state = UserDefaults.standard.bool(forKey: "DynamicListIndent") ? .on : .off
+        if menuItem.action == #selector(toggleIndentBullets(_:)) {
+            menuItem.state = UserDefaults.standard.bool(forKey: "DynamicListIndentBullets") ? .on : .off
+            return true
+        }
+        if menuItem.action == #selector(toggleIndentNumbers(_:)) {
+            menuItem.state = UserDefaults.standard.bool(forKey: "DynamicListIndentNumbers") ? .on : .off
             return true
         }
         if menuItem.action == #selector(toggleInlineImages(_:)) {

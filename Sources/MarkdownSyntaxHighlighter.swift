@@ -119,6 +119,55 @@ class MarkdownSyntaxHighlighter: NSObject, NSTextViewDelegate {
         }
     }
     
+    func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
+        guard let replacement = replacementString, replacement == "\n" else { return true }
+        
+        let string = textView.string as NSString
+        let lineRange = string.lineRange(for: affectedCharRange)
+        
+        let cursorOffsetInLine = affectedCharRange.location - lineRange.location
+        let textBeforeCursor = string.substring(with: NSRange(location: lineRange.location, length: cursorOffsetInLine))
+        
+        let indentBullets = UserDefaults.standard.bool(forKey: "DynamicListIndentBullets")
+        let indentNumbers = UserDefaults.standard.bool(forKey: "DynamicListIndentNumbers")
+        
+        var pattern = ""
+        if indentBullets && indentNumbers {
+            pattern = "^([ \\t]*)([-*+]|\\d+\\.)[ \\t]+(.*)$"
+        } else if indentBullets {
+            pattern = "^([ \\t]*)([-*+])[ \\t]+(.*)$"
+        } else if indentNumbers {
+            pattern = "^([ \\t]*)(\\d+\\.)[ \\t]+(.*)$"
+        }
+        
+        if !pattern.isEmpty {
+            let regex = try? NSRegularExpression(pattern: pattern)
+            if let match = regex?.firstMatch(in: textBeforeCursor, options: [], range: NSRange(location: 0, length: textBeforeCursor.count)) {
+                let indent = (textBeforeCursor as NSString).substring(with: match.range(at: 1))
+                let bullet = (textBeforeCursor as NSString).substring(with: match.range(at: 2))
+                let content = (textBeforeCursor as NSString).substring(with: match.range(at: 3))
+                
+                if content.trimmingCharacters(in: .whitespaces).isEmpty {
+                    // Empty bullet point, user wants to exit list. Delete bullet, allow \n
+                    let prefixRange = NSRange(location: lineRange.location, length: affectedCharRange.location - lineRange.location)
+                    textView.textStorage?.replaceCharacters(in: prefixRange, with: "")
+                    return true
+                } else {
+                    // Auto-continue bullet point
+                    var nextBullet = bullet
+                    if let num = Int(bullet.dropLast()) {
+                        nextBullet = "\(num + 1)."
+                    }
+                    let insertion = "\n\(indent)\(nextBullet) "
+                    textView.textStorage?.replaceCharacters(in: affectedCharRange, with: insertion)
+                    return false
+                }
+            }
+        }
+        
+        return true
+    }
+    
     func highlight(range: NSRange) {
         guard !isHighlighting, let textView = textView, let textStorage = textView.textStorage else { return }
         isHighlighting = true
@@ -247,13 +296,30 @@ class MarkdownSyntaxHighlighter: NSObject, NSTextViewDelegate {
         }
         
         // Dynamic List Indent
-        if UserDefaults.standard.bool(forKey: "DynamicListIndent") {
-            let listRegex = try? NSRegularExpression(pattern: "(?m)^([ \\t]*[-*+]|\\d+\\.)[ \\t]+([^\\n]+)")
+        let indentBullets = UserDefaults.standard.bool(forKey: "DynamicListIndentBullets")
+        let indentNumbers = UserDefaults.standard.bool(forKey: "DynamicListIndentNumbers")
+        
+        var listPattern = ""
+        if indentBullets && indentNumbers {
+            listPattern = "(?m)^(([ \\t]*[-*+]|\\d+\\.)[ \\t]+)([^\\n]+)"
+        } else if indentBullets {
+            listPattern = "(?m)^(([ \\t]*[-*+])[ \\t]+)([^\\n]+)"
+        } else if indentNumbers {
+            listPattern = "(?m)^((\\d+\\.)[ \\t]+)([^\\n]+)"
+        }
+        
+        if !listPattern.isEmpty {
+            let listRegex = try? NSRegularExpression(pattern: listPattern)
             if let matches = listRegex?.matches(in: string as String, options: [], range: range) {
                 for match in matches {
                     let style = NSMutableParagraphStyle()
-                    style.headIndent = 28.0
-                    style.firstLineHeadIndent = 0.0
+                    let prefixText = string.substring(with: match.range(at: 1))
+                    let size = (prefixText as NSString).size(withAttributes: [.font: baseFont!])
+                    
+                    let visualIndent: CGFloat = 15.0
+                    style.firstLineHeadIndent = visualIndent
+                    style.headIndent = visualIndent + size.width
+                    
                     textStorage.addAttribute(.paragraphStyle, value: style, range: match.range)
                 }
             }
