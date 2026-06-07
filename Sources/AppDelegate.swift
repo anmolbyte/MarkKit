@@ -7,7 +7,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             "FontFamily": "System",
             "FontSize": 16.0,
             "Theme": "System",
-            "FrostedGlass": false
+            "FrostedGlass": false,
+            "HideLinks": true
         ])
         
         applyTheme(UserDefaults.standard.string(forKey: "Theme") ?? "System")
@@ -104,6 +105,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         settingsMenu.addItem(NSMenuItem.separator())
+        let hideLinksItem = NSMenuItem(title: "Hide URLs in Links", action: #selector(toggleHideLinks(_:)), keyEquivalent: "")
+        hideLinksItem.target = self
+        settingsMenu.addItem(hideLinksItem)
+        
         let frostedGlassItem = NSMenuItem(title: "Frosted Glass Titlebar", action: #selector(toggleFrostedGlass(_:)), keyEquivalent: "")
         frostedGlassItem.target = self
         settingsMenu.addItem(frostedGlassItem)
@@ -130,6 +135,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.post(name: NSNotification.Name("FrostedGlassChanged"), object: nil)
     }
     
+    @objc func toggleHideLinks(_ sender: NSMenuItem) {
+        let current = UserDefaults.standard.bool(forKey: "HideLinks")
+        UserDefaults.standard.set(!current, forKey: "HideLinks")
+        NotificationCenter.default.post(name: NSNotification.Name("FontSettingsChanged"), object: nil)
+    }
+    
     @objc func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(changeFontFamily(_:)) {
             let currentFont = UserDefaults.standard.string(forKey: "FontFamily") ?? "System"
@@ -148,6 +159,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if menuItem.action == #selector(toggleFrostedGlass(_:)) {
             menuItem.state = UserDefaults.standard.bool(forKey: "FrostedGlass") ? .on : .off
+            return true
+        }
+        if menuItem.action == #selector(toggleHideLinks(_:)) {
+            menuItem.state = UserDefaults.standard.bool(forKey: "HideLinks") ? .on : .off
             return true
         }
         return true
