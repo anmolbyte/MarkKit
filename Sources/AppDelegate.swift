@@ -6,7 +6,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         UserDefaults.standard.register(defaults: [
             "FontFamily": "System",
             "FontSize": 16.0,
-            "Theme": "System"
+            "Theme": "System",
+            "FrostedGlass": false
         ])
         
         applyTheme(UserDefaults.standard.string(forKey: "Theme") ?? "System")
@@ -83,7 +84,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let fontSizeMenu = NSMenu(title: "Font Size")
         fontSizeMenuItem.submenu = fontSizeMenu
         
-        for size in 10...100 {
+        let standardSizes = [10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 48, 64, 72, 96]
+        for size in standardSizes {
             let item = NSMenuItem(title: "\(size)", action: #selector(changeFontSize(_:)), keyEquivalent: "")
             item.target = self
             item.tag = size
@@ -100,6 +102,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             item.target = self
             themeMenu.addItem(item)
         }
+        
+        settingsMenu.addItem(NSMenuItem.separator())
+        let frostedGlassItem = NSMenuItem(title: "Frosted Glass Titlebar", action: #selector(toggleFrostedGlass(_:)), keyEquivalent: "")
+        frostedGlassItem.target = self
+        settingsMenu.addItem(frostedGlassItem)
     }
     
     @objc func changeFontFamily(_ sender: NSMenuItem) {
@@ -117,6 +124,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         applyTheme(sender.title)
     }
     
+    @objc func toggleFrostedGlass(_ sender: NSMenuItem) {
+        let current = UserDefaults.standard.bool(forKey: "FrostedGlass")
+        UserDefaults.standard.set(!current, forKey: "FrostedGlass")
+        NotificationCenter.default.post(name: NSNotification.Name("FrostedGlassChanged"), object: nil)
+    }
+    
     @objc func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(changeFontFamily(_:)) {
             let currentFont = UserDefaults.standard.string(forKey: "FontFamily") ?? "System"
@@ -131,6 +144,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if menuItem.action == #selector(changeTheme(_:)) {
             let currentTheme = UserDefaults.standard.string(forKey: "Theme") ?? "System"
             menuItem.state = (menuItem.title == currentTheme) ? .on : .off
+            return true
+        }
+        if menuItem.action == #selector(toggleFrostedGlass(_:)) {
+            menuItem.state = UserDefaults.standard.bool(forKey: "FrostedGlass") ? .on : .off
             return true
         }
         return true
