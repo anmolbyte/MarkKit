@@ -1,5 +1,13 @@
 # MarkKit
 
+## Installation
+
+You can install MarkKit easily via Homebrew:
+
+```bash
+brew install --cask anmolbyte/tap/markkit
+```
+
 MarkKit is an ultra-lightweight, standalone macOS text editor built in Swift using AppKit. It is designed to be a fully writable, real-time Markdown editor offering a blank canvas experience—no sidebars, no proprietary databases, just your text.
 
 ## Features
