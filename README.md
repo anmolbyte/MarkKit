@@ -1,4 +1,4 @@
-# MarkKit
+# <img src="icon.svg" width="64" align="center"> MarkKit
 
 ## Installation
 
