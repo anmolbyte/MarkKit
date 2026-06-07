@@ -30,3 +30,4 @@ You can compile MarkKit natively on your Mac using the provided `Makefile`.
 ## Development
 
 The project consists of plain Swift files compiled with `swiftc`. The core editor logic lives in `MarkdownSyntaxHighlighter.swift` which safely processes real-time syntax highlighting on an `NSTextView` while strictly preserving the `selectedRanges`.
+fffffffffewffewafewafeawfewafewafewafewafewafewafewafewa

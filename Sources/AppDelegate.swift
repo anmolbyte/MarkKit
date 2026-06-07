@@ -4,9 +4,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenu()
-        if NSDocumentController.shared.documents.isEmpty {
-            NSDocumentController.shared.newDocument(nil)
-        }
+    }
+    
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        return true
     }
     
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {

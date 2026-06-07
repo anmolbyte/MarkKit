@@ -33,6 +33,10 @@ class MarkdownSyntaxHighlighter: NSObject, NSTextViewDelegate {
     func textDidChange(_ notification: Notification) {
         guard let textView = textView, let textStorage = textView.textStorage else { return }
         highlight(range: NSRange(location: 0, length: textStorage.length))
+        
+        if let window = textView.window, let doc = NSDocumentController.shared.document(for: window) {
+            doc.updateChangeCount(.changeDone)
+        }
     }
     
     func highlight(range: NSRange) {
