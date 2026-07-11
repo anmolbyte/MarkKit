@@ -1,0 +1,86 @@
+<Window x:Class="MarkKitWin.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="MarkKit" Height="600" Width="800">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open..." Click="MenuOpen_Click" InputGestureText="Ctrl+O"/>
+                <MenuItem Header="_Save" Click="MenuSave_Click" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="Save _As..." Click="MenuSaveAs_Click" InputGestureText="Ctrl+Shift+S"/>
+                <Separator/>
+                <MenuItem Header="E_xit" Click="MenuExit_Click" InputGestureText="Alt+F4"/>
+            </MenuItem>
+            
+            <MenuItem Header="_Edit">
+                <MenuItem Header="Cu_t" Command="ApplicationCommands.Cut" InputGestureText="Ctrl+X"/>
+                <MenuItem Header="_Copy" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
+                <MenuItem Header="_Paste" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
+                <MenuItem Header="Select _All" Command="ApplicationCommands.SelectAll" InputGestureText="Ctrl+A"/>
+            </MenuItem>
+
+            <MenuItem Header="F_ormat">
+                <MenuItem Header="Font" x:Name="MenuFont">
+                    <MenuItem Header="Segoe UI" IsCheckable="True" IsChecked="True" Click="SettingFont_Click"/>
+                    <MenuItem Header="Arial" IsCheckable="True" Click="SettingFont_Click"/>
+                    <MenuItem Header="Consolas" IsCheckable="True" Click="SettingFont_Click"/>
+                    <MenuItem Header="Georgia" IsCheckable="True" Click="SettingFont_Click"/>
+                    <MenuItem Header="Times New Roman" IsCheckable="True" Click="SettingFont_Click"/>
+                </MenuItem>
+                
+                <MenuItem Header="Font Size" x:Name="MenuFontSize">
+                    <MenuItem Header="12" IsCheckable="True" Click="SettingFontSize_Click"/>
+                    <MenuItem Header="14" IsCheckable="True" Click="SettingFontSize_Click"/>
+                    <MenuItem Header="16" IsCheckable="True" IsChecked="True" Click="SettingFontSize_Click"/>
+                    <MenuItem Header="18" IsCheckable="True" Click="SettingFontSize_Click"/>
+                    <MenuItem Header="24" IsCheckable="True" Click="SettingFontSize_Click"/>
+                    <MenuItem Header="32" IsCheckable="True" Click="SettingFontSize_Click"/>
+                </MenuItem>
+                
+                <MenuItem Header="Theme" x:Name="MenuTheme">
+                    <MenuItem Header="Light" IsCheckable="True" IsChecked="True" Click="SettingTheme_Click"/>
+                    <MenuItem Header="Dark" IsCheckable="True" Click="SettingTheme_Click"/>
+                </MenuItem>
+            </MenuItem>
+
+            <MenuItem Header="_Settings">
+                <MenuItem Header="Hide URLs in Links" IsCheckable="True" IsChecked="True" x:Name="MenuHideLinks" Click="Setting_Changed"/>
+                <MenuItem Header="Clickable Links" IsCheckable="True" IsChecked="True" x:Name="MenuClickableLinks" Click="Setting_Changed"/>
+                <Separator/>
+                <MenuItem Header="Dynamic List Indent">
+                    <MenuItem Header="Bullets" IsCheckable="True" IsChecked="True" x:Name="MenuDynamicBullets" Click="Setting_Changed"/>
+                    <MenuItem Header="Numbers" IsCheckable="True" IsChecked="True" x:Name="MenuDynamicNumbers" Click="Setting_Changed"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Inline Images" IsCheckable="True" IsChecked="False" x:Name="MenuInlineImages" Click="Setting_Changed"/>
+            </MenuItem>
+        </Menu>
+        
+        <RichTextBox x:Name="Editor"
+                     BorderThickness="0"
+                     Padding="4,2"
+                     FontFamily="Segoe UI"
+                     FontSize="16"
+                     AcceptsReturn="True"
+                     HorizontalScrollBarVisibility="Disabled"
+                     VerticalScrollBarVisibility="Auto"
+                     SpellCheck.IsEnabled="False"
+                     TextChanged="Editor_TextChanged"
+                     SelectionChanged="Editor_SelectionChanged"
+                     PreviewKeyDown="Editor_PreviewKeyDown">
+            <RichTextBox.Resources>
+                <Style TargetType="{x:Type Paragraph}">
+                    <Setter Property="Margin" Value="0,0,0,2"/>
+                </Style>
+            </RichTextBox.Resources>
+            <FlowDocument PagePadding="0">
+                <Paragraph>
+                    <Run Text="Welcome to MarkKit!"/>
+                </Paragraph>
+            </FlowDocument>
+        </RichTextBox>
+    </DockPanel>
+</Window>
