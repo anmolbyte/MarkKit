@@ -22,9 +22,31 @@ namespace MarkKitWin
         public bool DynamicListIndentNumbers { get; set; } = true;
         
         private bool _isDarkTheme = false;
-
-        // Flag to prevent queueing duplicate highlight dispatches
         private bool _highlightPending = false;
+
+        // Precompiled regexes — compiled once, reused every keystroke
+        private static readonly RegexOptions _opts = RegexOptions.Multiline | RegexOptions.Compiled;
+        private static readonly Regex _rxH6 = new(@"^###### .+$", _opts);
+        private static readonly Regex _rxH5 = new(@"^##### .+$", _opts);
+        private static readonly Regex _rxH4 = new(@"^#### .+$", _opts);
+        private static readonly Regex _rxH3 = new(@"^### .+$", _opts);
+        private static readonly Regex _rxH2 = new(@"^## .+$", _opts);
+        private static readonly Regex _rxH1 = new(@"^# .+$", _opts);
+        private static readonly Regex _rxBold = new(@"(?:\*\*|__)[^*_]+(?:\*\*|__)", _opts);
+        private static readonly Regex _rxItalic = new(@"(?<!\*)\*(?!\*)[^*]+\*(?!\*)|(?<!_)_(?!_)[^_]+_(?!_)", _opts);
+        private static readonly Regex _rxStrike = new(@"~~[^~]+~~", _opts);
+        private static readonly Regex _rxCode = new(@"`[^`\n]+`", _opts);
+        private static readonly Regex _rxBlockquote = new(@"^> .+$", _opts);
+        private static readonly Regex _rxList = new(@"^[ \t]*[-*+] ", _opts);
+        private static readonly Regex _rxLink = new(@"!?\[([^\]]+)\]\(([^)]+)\)", _opts);
+
+        // Cached brush for code background (avoid creating every highlight)
+        private static readonly SolidColorBrush _codeBackground = new(Color.FromArgb(50, 128, 128, 128));
+
+        static MarkdownSyntaxHighlighter()
+        {
+            _codeBackground.Freeze(); // Frozen brushes skip thread checks — faster
+        }
 
         public MarkdownSyntaxHighlighter(RichTextBox editor)
         {
@@ -62,11 +84,6 @@ namespace MarkKitWin
             ScheduleHighlight();
         }
 
-        /// <summary>
-        /// Queues a highlight to run as soon as WPF finishes processing the current input event.
-        /// Uses ApplicationIdle so it fires right after the keystroke/Enter is fully handled.
-        /// The _highlightPending flag prevents stacking multiple highlights.
-        /// </summary>
         private void ScheduleHighlight()
         {
             if (_highlightPending) return;
@@ -98,7 +115,7 @@ namespace MarkKitWin
                 TextRange fullRange = new TextRange(_editor.Document.ContentStart, _editor.Document.ContentEnd);
                 string text = fullRange.Text;
 
-                foreach (Match m in Regex.Matches(text, @"!?\[([^\]]+)\]\(([^)]+)\)", RegexOptions.Multiline))
+                foreach (Match m in _rxLink.Matches(text))
                 {
                     bool isIntersecting = !(endIdx < m.Index || startIdx > m.Index + m.Length);
                     
@@ -198,7 +215,6 @@ namespace MarkKitWin
             if (_isHighlighting) return;
             _isHighlighting = true;
 
-            // Save cursor as pure text offset
             int caretTextOffset = GetTextOffset(_editor.CaretPosition);
             int selStartTextOffset = GetTextOffset(_editor.Selection.Start);
             int selEndTextOffset = GetTextOffset(_editor.Selection.End);
@@ -208,7 +224,6 @@ namespace MarkKitWin
 
             try
             {
-                // Reset all formats first
                 range.ClearAllProperties();
                 range.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize);
                 range.ApplyPropertyValue(TextElement.FontFamilyProperty, _baseFontFamily);
@@ -218,10 +233,10 @@ namespace MarkKitWin
 
                 string text = range.Text;
 
-                // Helper to apply formatting to regex matches
-                void ApplyRegexFormatting(string pattern, Action<TextRange, Match> applyAction)
+                // Helper using precompiled regex
+                void ApplyFormatting(Regex rx, Action<TextRange, Match> applyAction)
                 {
-                    foreach (Match m in Regex.Matches(text, pattern, RegexOptions.Multiline))
+                    foreach (Match m in rx.Matches(text))
                     {
                         TextPointer? start = GetPointerAtTextOffset(m.Index);
                         TextPointer? end = GetPointerAtTextOffset(m.Index + m.Length);
@@ -233,41 +248,33 @@ namespace MarkKitWin
                     }
                 }
 
-                // Header 1-6 (match longest prefix first to avoid double-matching)
-                ApplyRegexFormatting(@"^###### .+$", (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 0.85); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
-                ApplyRegexFormatting(@"^##### .+$", (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 1.0); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
-                ApplyRegexFormatting(@"^#### .+$", (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 1.15); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
-                ApplyRegexFormatting(@"^### .+$", (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 1.25); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
-                ApplyRegexFormatting(@"^## .+$", (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 1.5); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
-                ApplyRegexFormatting(@"^# .+$", (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 2.0); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
+                // Headers (longest prefix first)
+                ApplyFormatting(_rxH6, (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 0.85); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
+                ApplyFormatting(_rxH5, (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 1.0); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
+                ApplyFormatting(_rxH4, (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 1.15); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
+                ApplyFormatting(_rxH3, (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 1.25); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
+                ApplyFormatting(_rxH2, (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 1.5); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
+                ApplyFormatting(_rxH1, (r, m) => { r.ApplyPropertyValue(TextElement.FontSizeProperty, _baseFontSize * 2.0); r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); });
 
-                // Bold
-                ApplyRegexFormatting(@"(?:\*\*|__)[^*_]+(?:\*\*|__)", (r, m) => r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold));
-                
-                // Italic
-                ApplyRegexFormatting(@"(?<!\*)\*(?!\*)[^*]+\*(?!\*)|(?<!_)_(?!_)[^_]+_(?!_)", (r, m) => r.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Italic));
-                
-                // Strikethrough
-                ApplyRegexFormatting(@"~~[^~]+~~", (r, m) => r.ApplyPropertyValue(Inline.TextDecorationsProperty, TextDecorations.Strikethrough));
+                ApplyFormatting(_rxBold, (r, m) => r.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold));
+                ApplyFormatting(_rxItalic, (r, m) => r.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Italic));
+                ApplyFormatting(_rxStrike, (r, m) => r.ApplyPropertyValue(Inline.TextDecorationsProperty, TextDecorations.Strikethrough));
 
-                // Inline code
-                ApplyRegexFormatting(@"`[^`\n]+`", (r, m) => {
+                ApplyFormatting(_rxCode, (r, m) => {
                     r.ApplyPropertyValue(TextElement.FontFamilyProperty, _codeFontFamily);
                     r.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Crimson);
-                    r.ApplyPropertyValue(TextElement.BackgroundProperty, new SolidColorBrush(Color.FromArgb(50, 128, 128, 128)));
+                    r.ApplyPropertyValue(TextElement.BackgroundProperty, _codeBackground);
                 });
 
-                // Blockquotes
-                ApplyRegexFormatting(@"^> .+$", (r, m) => {
+                ApplyFormatting(_rxBlockquote, (r, m) => {
                     r.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Italic);
                     r.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Gray);
                 });
 
-                // Lists
-                ApplyRegexFormatting(@"^[ \t]*[-*+] ", (r, m) => r.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Gray));
+                ApplyFormatting(_rxList, (r, m) => r.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Gray));
 
-                // Links [text](url)
-                ApplyRegexFormatting(@"!?\[([^\]]+)\]\(([^)]+)\)", (r, m) => {
+                // Links
+                ApplyFormatting(_rxLink, (r, m) => {
                     r.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.DodgerBlue);
                     
                     bool isIntersecting = !(selEndTextOffset < m.Index || selStartTextOffset > m.Index + m.Length);
@@ -291,7 +298,6 @@ namespace MarkKitWin
             }
             finally
             {
-                // Restore cursor using the same text-offset system
                 TextPointer? newCaret = GetPointerAtTextOffset(caretTextOffset);
                 if (newCaret != null)
                 {
@@ -314,20 +320,12 @@ namespace MarkKitWin
             }
         }
 
-        /// <summary>
-        /// Counts how many characters of actual text content appear before the given pointer.
-        /// </summary>
         private int GetTextOffset(TextPointer pointer)
         {
             TextRange range = new TextRange(_editor.Document.ContentStart, pointer);
             return range.Text.Length;
         }
 
-        /// <summary>
-        /// Given a pure text character offset (as would be produced by TextRange.Text),
-        /// walks the document tree to find the corresponding TextPointer.
-        /// Only counts actual text runs and \r\n for paragraph boundaries.
-        /// </summary>
         private TextPointer? GetPointerAtTextOffset(int targetOffset)
         {
             if (targetOffset <= 0) return _editor.Document.ContentStart;

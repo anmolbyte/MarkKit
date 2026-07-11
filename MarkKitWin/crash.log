@@ -1,0 +1,18 @@
+Startup error: Object reference not set to an instance of an object.
+   at MarkKitWin.MainWindow.Editor_TextChanged(Object sender, TextChangedEventArgs e) in C:\Users\anmol\Documents\MarkKit\MarkKitWin\MainWindow.xaml.cs:line 36
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.RaiseEventImpl(DependencyObject sender, RoutedEventArgs args)
+   at System.Windows.Controls.RichTextBox.set_Document(FlowDocument value)
+   at MS.Internal.Xaml.Runtime.ClrObjectRuntime.SetValue(Object inst, XamlMember property, Object value)
+   at System.Xaml.XamlObjectWriter.Logic_ApplyPropertyValue(ObjectWriterContext ctx, XamlMember prop, Object value, Boolean onParent)
+   at System.Xaml.XamlObjectWriter.Logic_DoAssignmentToParentProperty(ObjectWriterContext ctx)
+   at System.Xaml.XamlObjectWriter.Logic_CreateAndAssignToParentStart(ObjectWriterContext ctx)
+   at System.Xaml.XamlObjectWriter.WriteStartMember(XamlMember property)
+   at System.Windows.Markup.WpfXamlLoader.TransformNodes(XamlReader xamlReader, XamlObjectWriter xamlWriter, Boolean onlyLoadOneNode, Boolean skipJournaledProperties, Boolean shouldPassLineNumberInfo, IXamlLineInfo xamlLineInfo, IXamlLineInfoConsumer xamlLineInfoConsumer, XamlContextStack`1 stack, IStyleConnector styleConnector)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at MarkKitWin.MainWindow.InitializeComponent() in C:\Users\anmol\Documents\MarkKit\MarkKitWin\MainWindow.xaml:line 1
+   at MarkKitWin.MainWindow..ctor() in C:\Users\anmol\Documents\MarkKit\MarkKitWin\MainWindow.xaml.cs:line 19
